@@ -1,42 +1,59 @@
-﻿using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 using Frictionless;
-using System;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.TestTools;
+using Assert = UnityEngine.Assertions.Assert;
 
-public class RoutingTest : MonoBehaviour
+namespace Tests
 {
-	IEnumerator Start()
-	{
-		const float epsilon = 0.1f;
+    public class RoutingTest
+    {
+        [UnityTest]
+        public IEnumerator TestMessageRouting()
+        {
+            var loadScene = SceneManager.LoadSceneAsync("Tests");
 
-		Ball[] balls = GameObject.FindObjectsOfType<Ball>();
-		if (balls == null || balls.Length == 0)
-			IntegrationTest.Fail(gameObject, "Failed to find objects to test - the scene isn't setup correctly for this test");
-		Vector3[] startPositions = new Vector3[balls.Length];
-		for (int i = 0; i < balls.Length; i++)
-			startPositions[i] = balls[i].transform.position;
+            while (loadScene.isDone == false)
+            {
+                yield return null;
+            }
 
-		yield return new WaitForSeconds(2.0f);
+            const float epsilon = 0.1f;
 
-		// Verify that nothing has changed yet
-		for (int i = 0; i < balls.Length; i++)
-		{
-			if ((startPositions[i] - balls[i].transform.position).magnitude > epsilon)
-				IntegrationTest.Fail(gameObject, "Balls are prematurely in motion - this should not have happened until a message was routed!");
-		}
+            Ball[] balls = GameObject.FindObjectsOfType<Ball>();
 
-		ServiceFactory.Instance.Resolve<MessageRouter>().RaiseMessage(new DropCommand() { Force = 500.0f });
+            // Failed to find objects to test - the scene isn't setup correctly for this test
+            Assert.IsFalse(balls == null || balls.Length == 0,
+                "Failed to find objects to test - the scene isn't setup correctly for this test.");
 
-		yield return new WaitForSeconds(2.0f);
+            Vector3[] startPositions = new Vector3[balls.Length];
 
-		// Verify that things have changed for all recipients
-		for (int i = 0; i < balls.Length; i++)
-		{
-			if ((startPositions[i] - balls[i].transform.position).magnitude <= epsilon)
-				IntegrationTest.Fail(gameObject, "Balls failed to respond to routed message");
-		}
+            for (int i = 0; i < balls.Length; i++)
+            {
+                startPositions[i] = balls[i].transform.position;
+            }
 
-		IntegrationTest.Pass(gameObject);
-	}
+            for (int i = 0; i < balls.Length; i++)
+            {
+                // Balls are prematurely in motion - this should not have happened until a message was routed!
+                Assert.IsFalse((startPositions[i] - balls[i].transform.position).magnitude > epsilon,
+                    "Balls are prematurely in motion - this should not have happened until a message was routed!");
+            }
+
+            ServiceFactory.Instance.Resolve<MessageRouter>().RaiseMessage(new DropCommand() {Force = 500.0f});
+
+            yield return new WaitForSeconds(2.0f);
+
+            // Verify that things have changed for all recipients
+            for (int i = 0; i < balls.Length; i++)
+            {
+                Assert.IsFalse((startPositions[i] - balls[i].transform.position).magnitude <= epsilon,
+                    "Failed to verify that things have changed!");
+            }
+
+            yield return null;
+        }
+    }
 }
