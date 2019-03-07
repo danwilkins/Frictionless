@@ -1,4 +1,4 @@
-﻿public class DropCommand
+﻿public class DropMessage
 {
 	public float Force { get; set; }
 }

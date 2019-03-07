@@ -4,7 +4,6 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
-using Assert = UnityEngine.Assertions.Assert;
 
 namespace Tests
 {
@@ -24,7 +23,6 @@ namespace Tests
 
             Ball[] balls = GameObject.FindObjectsOfType<Ball>();
 
-            // Failed to find objects to test - the scene isn't setup correctly for this test
             Assert.IsFalse(balls == null || balls.Length == 0,
                 "Failed to find objects to test - the scene isn't setup correctly for this test.");
 
@@ -37,23 +35,19 @@ namespace Tests
 
             for (int i = 0; i < balls.Length; i++)
             {
-                // Balls are prematurely in motion - this should not have happened until a message was routed!
                 Assert.IsFalse((startPositions[i] - balls[i].transform.position).magnitude > epsilon,
                     "Balls are prematurely in motion - this should not have happened until a message was routed!");
             }
 
-            ServiceFactory.Instance.Resolve<MessageRouter>().RaiseMessage(new DropCommand() {Force = 500.0f});
+            ServiceFactory.Instance.Resolve<MessageRouter>().RaiseMessage(new DropMessage() {Force = 500.0f});
 
             yield return new WaitForSeconds(2.0f);
 
-            // Verify that things have changed for all recipients
             for (int i = 0; i < balls.Length; i++)
             {
                 Assert.IsFalse((startPositions[i] - balls[i].transform.position).magnitude <= epsilon,
-                    "Failed to verify that things have changed!");
+                    "Failed to verify that positions have changed!");
             }
-
-            yield return null;
         }
     }
 }

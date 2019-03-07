@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Collections;
+using System.Text;
 
 namespace Frictionless
 {
 	public class MessageRouter
 	{
-		private Dictionary<Type,List<MessageHandler>> handlers = new Dictionary<Type, List<MessageHandler>>();
-		private List<Delegate> pendingRemovals = new List<Delegate>();
-		private bool isRaisingMessage;
+		private Dictionary<Type,List<MessageHandler>> _handlers = new Dictionary<Type, List<MessageHandler>>();
+		private List<Delegate> _pendingRemovals = new List<Delegate>();
+		private bool _isRaisingMessage;
 
 		public MessageRouter()
 		{
@@ -17,67 +17,85 @@ namespace Frictionless
 		public void AddHandler<T>(Action<T> handler)
 		{
 			List<MessageHandler> delegates = null;
-			if (!handlers.TryGetValue(typeof(T), out delegates))
+			
+			if (!_handlers.TryGetValue(typeof(T), out delegates))
 			{
 				delegates = new List<MessageHandler>();
-				handlers[typeof(T)] = delegates;
+				_handlers[typeof(T)] = delegates;
 			}
+
 			if (delegates.Find(x => x.Delegate == handler) == null)
-				delegates.Add(new MessageHandler() { Target = handler.Target, Delegate = handler });
+			{
+				delegates.Add(new MessageHandler() {Target = handler.Target, Delegate = handler});
+			}
 		}
 
 		public void RemoveHandler<T>(Action<T> handler)
 		{
 			List<MessageHandler> delegates = null;
-			if (handlers.TryGetValue(typeof(T), out delegates))
+			if (!_handlers.TryGetValue(typeof(T), out delegates))
 			{
-				MessageHandler existingHandler = delegates.Find(x => x.Delegate == handler);
-				if (existingHandler != null)
-				{
-					if (isRaisingMessage)
-						pendingRemovals.Add(handler);
-					else
-						delegates.Remove(existingHandler);
-				}
+				return;
+			}
+			
+			MessageHandler existingHandler = delegates.Find(x => x.Delegate == handler);
+			if (existingHandler == null)
+			{
+				return;
+			}
+				
+			if (_isRaisingMessage)
+			{
+				_pendingRemovals.Add(handler);
+			}
+			else
+			{
+				delegates.Remove(existingHandler);
 			}
 		}
 
 		public void Reset()
 		{
-			handlers.Clear();
+			_handlers.Clear();
 		}
-
+		
 		public void RaiseMessage(object msg)
 		{
 			try
 			{
 				List<MessageHandler> delegates = null;
-				if (handlers.TryGetValue(msg.GetType(), out delegates))
+				
+				if (!_handlers.TryGetValue(msg.GetType(), out delegates))
 				{
-					isRaisingMessage = true;
-					try
-					{
-						foreach (MessageHandler h in delegates)
-						{
-	#if NETFX_CORE
-							h.Delegate.DynamicInvoke(msg);
-	#else
-							h.Delegate.Method.Invoke(h.Target, new object[] { msg });
-	#endif
-						}
-					}
-					finally
-					{
-						isRaisingMessage = false;
-					}
-					foreach (Delegate d in pendingRemovals)
-					{
-						MessageHandler existingHandler = delegates.Find(x => x.Delegate == d);
-						if (existingHandler != null)
-							delegates.Remove(existingHandler);
-					}
-					pendingRemovals.Clear();
+					return;
 				}
+				
+				_isRaisingMessage = true;
+				
+				try
+				{
+					foreach (MessageHandler h in delegates)
+					{
+#if NETFX_CORE
+						h.Delegate.DynamicInvoke(msg);
+#else
+						h.Delegate.Method.Invoke(h.Target, new object[] { msg });
+#endif
+					}
+				}
+				finally
+				{
+					_isRaisingMessage = false;
+				}
+				foreach (Delegate d in _pendingRemovals)
+				{
+					MessageHandler existingHandler = delegates.Find(x => x.Delegate == d);				
+					if (existingHandler != null)
+					{
+						delegates.Remove(existingHandler);
+					}
+				}
+				_pendingRemovals.Clear();
 			}
 			catch(Exception ex)
 			{
@@ -85,7 +103,35 @@ namespace Frictionless
 			}
 		}
 
-		public class MessageHandler
+		public string GetAllHandlerDebugInfo()
+		{
+			if (_handlers.Count == 0)
+			{
+				return "No message handlers registered.";
+			}
+			
+			StringBuilder debugOutput = new StringBuilder();
+			
+			foreach (var handler in _handlers)
+			{
+				debugOutput.AppendLine($"Message {handler.Key.Name} registered with {handler.Value.Count} handlers");
+			}
+
+			return debugOutput.ToString();
+		}
+
+		public string GetHandlerDebugInfo<T>()
+		{		
+			List<MessageHandler> delegates;
+			if (!_handlers.TryGetValue(typeof(T), out delegates))
+			{
+				return $"Message {typeof(T)} is not registered.";
+			}	
+
+			return $"Message {typeof(T)} registered with {delegates.Count} handlers";
+		}
+
+		private class MessageHandler
 		{
 			public object Target { get; set; }
 			public Delegate Delegate { get; set; }
