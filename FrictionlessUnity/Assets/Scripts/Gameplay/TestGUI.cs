@@ -36,5 +36,11 @@ public class TestGUI : MonoBehaviour
 		{
 			Debug.Log(ServiceFactory.Instance.Resolve<MessageRouter>().GetAllHandlerDebugInfo());
 		}
+		
+		y += _buttonHeightDelta;
+		if (GUI.Button(new Rect(40.0f, y, 200.0f, 40.0f), "Debug Services"))
+		{
+			Debug.Log(ServiceFactory.Instance.GetDebugInfo());
+		}
 	}
 }
