@@ -92,7 +92,9 @@ void HandlePurchaseGemsButtonTapped()
 }
 ```
 
-The same thing works with transient objects - instead of `RegisterSingleton` use `Register`. Callers will then receive new instances of the correct concrete type whenever they `Resolve` instead of getting a reference to the same instance.
+The same thing works with transient objects - instead of `RegisterSingleton` use `RegisterTransient`. Callers will then receive new instances of the correct concrete type whenever they `Resolve` instead of getting a reference to the same instance.
+
+The `Resolve` method also has an overload with parameter `onlyExists` which will only return singleton instances if they have already been created.
 
 ##Route Messages
 But this is still too hard wired because someone had to explicitly call `Player.TakeDamage`, so they needed knowledge of `Player`. Use `MessageRouter` to decouple even more!
