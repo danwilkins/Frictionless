@@ -8,33 +8,33 @@ public class TestGUI : MonoBehaviour
 	void OnGUI()
 	{
 		float y = _buttonHeightDelta;
-		if (GUI.Button(new Rect(40.0f, y, 230.0f, 40.0f), "Drop Balls"))
+		if (GUI.Button(new Rect(40.0f, y, 200.0f, 40.0f), "Drop Balls"))
 		{
 			ServiceFactory.Instance.Resolve<MessageRouter>().RaiseMessage(new DropMessage() { Force = 500.0f });
 		}
 
 		y += _buttonHeightDelta;
-		if (GUI.Button(new Rect(40.0f, y, 230.0f, 40.0f), "Toggle Cube Gravity"))
+		if (GUI.Button(new Rect(40.0f, y, 200.0f, 40.0f), "Toggle Cube Gravity"))
 		{
 			ServiceFactory.Instance.Resolve<MessageRouter>().RaiseMessage(new ToggleGravityMessage());		
 		}
 		
 		y += _buttonHeightDelta;
-		if (GUI.Button(new Rect(40.0f, y, 230.0f, 40.0f), "Reset Positions"))
+		if (GUI.Button(new Rect(40.0f, y, 200.0f, 40.0f), "Reset Positions"))
 		{
 			ServiceFactory.Instance.Resolve<MessageRouter>().RaiseMessage(new ResetStateMessage());
 		}
 		
 		y += _buttonHeightDelta;
-		if (GUI.Button(new Rect(40.0f, y, 230.0f, 40.0f), "Debug All Message Handlers"))
+		if (GUI.Button(new Rect(40.0f, y, 200.0f, 40.0f), "Destroy All Objects"))
 		{
-			Debug.Log(ServiceFactory.Instance.Resolve<MessageRouter>().GetAllHandlerDebugInfo());
+			ServiceFactory.Instance.Resolve<MessageRouter>().RaiseMessage(new DestroyAllMessage());
 		}
 		
 		y += _buttonHeightDelta;
-		if (GUI.Button(new Rect(40.0f, y, 230.0f, 40.0f), "Debug Drop Ball Message Handler"))
+		if (GUI.Button(new Rect(40.0f, y, 200.0f, 40.0f), "Debug Message Handlers"))
 		{
-			Debug.Log(ServiceFactory.Instance.Resolve<MessageRouter>().GetHandlerDebugInfo<DropMessage>());
+			Debug.Log(ServiceFactory.Instance.Resolve<MessageRouter>().GetAllHandlerDebugInfo());
 		}
 	}
 }

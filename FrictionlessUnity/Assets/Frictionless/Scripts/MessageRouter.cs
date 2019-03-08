@@ -13,7 +13,13 @@ namespace Frictionless
 		public MessageRouter()
 		{
 		}
-
+		
+		public void AddHandler<T>(Action<T> handler, ref Action unregisterAction)
+		{
+			AddHandler(handler);
+			unregisterAction += () => { RemoveHandler(handler); };
+		}
+		
 		public void AddHandler<T>(Action<T> handler)
 		{
 			List<MessageHandler> delegates = null;
@@ -24,21 +30,21 @@ namespace Frictionless
 				_handlers[typeof(T)] = delegates;
 			}
 
-			if (delegates.Find(x => x.Delegate == handler) == null)
+			if (delegates.Find(x => x.Delegate == (Delegate) handler) == null)
 			{
 				delegates.Add(new MessageHandler() {Target = handler.Target, Delegate = handler});
 			}
 		}
 
 		public void RemoveHandler<T>(Action<T> handler)
-		{
+		{			
 			List<MessageHandler> delegates = null;
 			if (!_handlers.TryGetValue(typeof(T), out delegates))
 			{
 				return;
 			}
 			
-			MessageHandler existingHandler = delegates.Find(x => x.Delegate == handler);
+			MessageHandler existingHandler = delegates.Find(x => x.Delegate == (Delegate) handler);
 			if (existingHandler == null)
 			{
 				return;
@@ -111,11 +117,16 @@ namespace Frictionless
 			}
 			
 			StringBuilder debugOutput = new StringBuilder();
+
+			int total = 0;
 			
 			foreach (var handler in _handlers)
 			{
 				debugOutput.AppendLine($"Message {handler.Key.Name} registered with {handler.Value.Count} handlers");
+				total += handler.Value.Count;
 			}
+
+			debugOutput.AppendLine("Total handlers: " + total);
 
 			return debugOutput.ToString();
 		}

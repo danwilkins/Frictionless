@@ -12,14 +12,21 @@ public class Ball : MonoBehaviour
         _rigidbody = GetComponent<Rigidbody>();
         _initialPosition = transform.position;
         
-        ServiceFactory.Instance.Resolve<MessageRouter>().AddHandler<DropMessage>(OnDrop);
-        ServiceFactory.Instance.Resolve<MessageRouter>().AddHandler<ResetStateMessage>(OnResetState);
+        MessageRouter messageRouter = ServiceFactory.Instance.Resolve<MessageRouter>();
+            
+        // Can add handler normally and remove them via the remove handler function as in OnDestroy
+        messageRouter.AddHandler<DropMessage>(OnDrop);
+        messageRouter.AddHandler<ResetStateMessage>(OnResetState);
+        messageRouter.AddHandler<DestroyAllMessage>(OnDestroyAll);
     }
 
     void OnDestroy()
     {
-        ServiceFactory.Instance.Resolve<MessageRouter>().RemoveHandler<DropMessage>(OnDrop);
-        ServiceFactory.Instance.Resolve<MessageRouter>().RemoveHandler<ResetStateMessage>(OnResetState);
+        MessageRouter messageRouter = ServiceFactory.Instance.Resolve<MessageRouter>();
+
+        messageRouter.RemoveHandler<DropMessage>(OnDrop);
+        messageRouter.RemoveHandler<ResetStateMessage>(OnResetState);
+        messageRouter.RemoveHandler<DestroyAllMessage>(OnDestroyAll);
     }
     
     private void OnDrop(DropMessage dropMessage)
@@ -33,5 +40,10 @@ public class Ball : MonoBehaviour
         _rigidbody.isKinematic = true;
         _rigidbody.velocity = Vector3.zero;
         transform.position = _initialPosition;
+    }
+    
+    private void OnDestroyAll(DestroyAllMessage destroyAllMessage)
+    {
+        Destroy(gameObject);
     }
 }

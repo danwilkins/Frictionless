@@ -1,4 +1,5 @@
-﻿using Frictionless;
+﻿using System;
+using Frictionless;
 using UnityEngine;
 
 public class Cube : MonoBehaviour
@@ -7,19 +8,24 @@ public class Cube : MonoBehaviour
 
     private Vector3 _initialPosition;
 
+    private Action _unregisterMessages;
+
     private void Start()
     {
         _rigidbody = GetComponent<Rigidbody>();
         _initialPosition = transform.position;
+
+        MessageRouter messageRouter = ServiceFactory.Instance.Resolve<MessageRouter>();
         
-        ServiceFactory.Instance.Resolve<MessageRouter>().AddHandler<ToggleGravityMessage>(OnToggleGravity);
-        ServiceFactory.Instance.Resolve<MessageRouter>().AddHandler<ResetStateMessage>(OnResetState);
+        // Can also use the overload and pass in an action which caches the removing handlers
+        messageRouter.AddHandler<ToggleGravityMessage>(OnToggleGravity, ref _unregisterMessages);
+        messageRouter.AddHandler<ResetStateMessage>(OnResetState, ref _unregisterMessages);
+        messageRouter.AddHandler<DestroyAllMessage>(OnDestroyAll, ref _unregisterMessages);
     }
 
     private void OnDestroy()
     {
-        ServiceFactory.Instance.Resolve<MessageRouter>().RemoveHandler<ToggleGravityMessage>(OnToggleGravity);
-        ServiceFactory.Instance.Resolve<MessageRouter>().RemoveHandler<ResetStateMessage>(OnResetState);
+        _unregisterMessages?.Invoke();
     }
 
     private void OnToggleGravity(ToggleGravityMessage toggleGravityMessage)
@@ -27,11 +33,16 @@ public class Cube : MonoBehaviour
         _rigidbody.useGravity = !_rigidbody.useGravity;
         _rigidbody.velocity = Vector3.zero;
     }
-    
-    private void OnResetState(ResetStateMessage obj)
+
+    private void OnResetState(ResetStateMessage resetStateMessage)
     {
         _rigidbody.useGravity = false;
         _rigidbody.velocity = Vector3.zero;
         transform.position = _initialPosition;
+    }
+    
+    private void OnDestroyAll(DestroyAllMessage destroyAllMessage)
+    {
+        Destroy(gameObject);
     }
 }
